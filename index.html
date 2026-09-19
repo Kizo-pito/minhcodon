@@ -176,20 +176,9 @@
           <button class="btn btn-primary" id="btn-next-ten" type="button" disabled>Tiếp theo →</button>
         </section>
 
-        <section class="slide" data-key="tuoi">
-          <button class="back-link" type="button" data-back>← Quay lại</button>
-          <div class="eyebrow">Câu 2 / 5</div>
-          <h2>Bạn bao nhiêu tuổi?</h2>
-          <div class="field">
-            <label for="input-tuoi">Tuổi</label>
-            <input id="input-tuoi" type="number" inputmode="numeric" placeholder="VD: 20" min="1" max="120">
-          </div>
-          <button class="btn btn-primary" id="btn-next-tuoi" type="button" disabled>Tiếp theo →</button>
-        </section>
-
         <section class="slide" data-key="tinhtrang">
           <button class="back-link" type="button" data-back>← Quay lại</button>
-          <div class="eyebrow">Câu 3 / 5</div>
+          <div class="eyebrow">Câu 2 / 5</div>
           <h2>Tình trạng mối quan hệ hiện tại?</h2>
           <div class="pill-grid" id="pill-group" role="group" aria-label="Tình trạng mối quan hệ">
             <button class="pill" type="button" data-value="Độc thân">Độc thân</button>
@@ -204,13 +193,24 @@
 
         <section class="slide" data-key="chunhat">
           <button class="back-link" type="button" data-back>← Quay lại</button>
-          <div class="eyebrow">Câu 4 / 5</div>
+          <div class="eyebrow">Câu 3 / 5</div>
           <h2>Chủ nhật này bạn có rảnh không?</h2>
           <div class="choice-field" id="choice-field">
             <button class="choice-yes" type="button" id="btn-yes">Có 🙌</button>
             <button class="choice-no" type="button" id="btn-no">Không</button>
           </div>
           <div class="nudge" id="nudge-text">&nbsp;</div>
+        </section>
+
+        <section class="slide" data-key="hotay">
+          <button class="back-link" type="button" data-back>← Quay lại</button>
+          <div class="eyebrow">Câu 4 / 5</div>
+          <h2>Bạn có muốn đi chơi Hồ Tây một chút không?</h2>
+          <div class="choice-field" id="choice-field-hotay">
+            <button class="choice-yes" type="button" id="btn-yes-hotay">Có 🙌</button>
+            <button class="choice-no" type="button" id="btn-no-hotay">Không</button>
+          </div>
+          <div class="nudge" id="nudge-text-hotay">&nbsp;</div>
         </section>
 
         <section class="slide" data-key="thoigian">
@@ -258,9 +258,9 @@
       access_key: WEB3FORMS_ACCESS_KEY,
       subject: 'Tra loi tu ' + (payload.ten || 'ban be'),
       ten: payload.ten,
-      tuoi: payload.tuoi,
       tinh_trang_moi_quan_he: payload.tinh_trang_moi_quan_he,
       ranh_chu_nhat: payload.ranh_chu_nhat,
+      muon_di_ho_tay: payload.muon_di_ho_tay,
       thoigian_ranh: payload.thoigian_ranh,
       so_lan_ne_nut_khong: payload.so_lan_ne_nut_khong,
       thoi_gian: payload.thoi_gian
@@ -277,10 +277,10 @@
     });
   }
 
-  var order = ["ten","tuoi","tinhtrang","chunhat","thoigian","result"];
-  var questionKeys = ["ten","tuoi","tinhtrang","chunhat","thoigian"];
+  var order = ["ten","tinhtrang","chunhat","hotay","thoigian","result"];
+  var questionKeys = ["ten","tinhtrang","chunhat","hotay","thoigian"];
   var current = 0;
-  var answers = { ten:"", tuoi:"", tinhTrang:"", ranhChuNhat:"", thoigianRanh:"" };
+  var answers = { ten:"", tinhTrang:"", ranhChuNhat:"", hoTay:"", thoigianRanh:"" };
   var dodgeCount = 0;
   var lastPayload = null;
 
@@ -326,7 +326,6 @@
     });
     updateProgress();
     if (order[current] === 'ten') inputTen.focus();
-    if (order[current] === 'tuoi') inputTuoi.focus();
     if (order[current] === 'thoigian') inputThoigian.focus();
   }
 
@@ -370,16 +369,6 @@
   });
   btnNextTen.addEventListener('click', function(){ answers.ten = inputTen.value.trim(); next(); });
 
-  var inputTuoi = document.getElementById('input-tuoi');
-  var btnNextTuoi = document.getElementById('btn-next-tuoi');
-  inputTuoi.addEventListener('input', function(){
-    btnNextTuoi.disabled = inputTuoi.value.trim().length === 0;
-  });
-  inputTuoi.addEventListener('keydown', function(e){
-    if (e.key === 'Enter' && !btnNextTuoi.disabled) { answers.tuoi = Number(inputTuoi.value); next(); }
-  });
-  btnNextTuoi.addEventListener('click', function(){ answers.tuoi = Number(inputTuoi.value); next(); });
-
   var pillGroup = document.getElementById('pill-group');
   var btnNextTinhTrang = document.getElementById('btn-next-tinhtrang');
   pillGroup.addEventListener('click', function(e){
@@ -392,44 +381,64 @@
   });
   btnNextTinhTrang.addEventListener('click', next);
 
-  var choiceField = document.getElementById('choice-field');
-  var btnYes = document.getElementById('btn-yes');
-  var btnNo = document.getElementById('btn-no');
-  var nudgeText = document.getElementById('nudge-text');
+  function createDodgeChoice(opts){
+    var field = opts.field, yesBtn = opts.yesBtn, noBtn = opts.noBtn, nudge = opts.nudge, slideKey = opts.slideKey;
+    var localCount = 0;
 
-  function placeNoRandom(){
-    var fw = choiceField.clientWidth, fh = choiceField.clientHeight;
-    var bw = btnNo.offsetWidth || 110, bh = btnNo.offsetHeight || 50;
-    var maxX = Math.max(fw-bw-8,8), maxY = Math.max(fh-bh-8,8);
-    var x = Math.random()*maxX, y = Math.random()*maxY;
-    btnNo.style.left = x+'px'; btnNo.style.top = y+'px';
-    btnNo.style.transform = 'translateY(0) rotate('+(Math.random()*10-5)+'deg)';
-  }
-  function resetNoButton(){
-    dodgeCount = 0;
-    nudgeText.textContent = ' ';
-    btnNo.style.left='62%'; btnNo.style.top='50%'; btnNo.style.transform='translateY(-50%)';
-  }
-  function dodge(){
-    dodgeCount++;
-    placeNoRandom();
-    if (dodgeCount===3) nudgeText.textContent='Nhanh tay đấy 😏';
-    else if (dodgeCount===7) nudgeText.textContent="Thôi mà, bấm 'Có' đi~";
-    else if (dodgeCount>=12) nudgeText.textContent='Chắc là có duyên với "Có" rồi 😄';
-  }
-  resetNoButton();
+    function placeNoRandom(){
+      var fw = field.clientWidth, fh = field.clientHeight;
+      var bw = noBtn.offsetWidth || 110, bh = noBtn.offsetHeight || 50;
+      var maxX = Math.max(fw-bw-8,8), maxY = Math.max(fh-bh-8,8);
+      var x = Math.random()*maxX, y = Math.random()*maxY;
+      noBtn.style.left = x+'px'; noBtn.style.top = y+'px';
+      noBtn.style.transform = 'translateY(0) rotate('+(Math.random()*10-5)+'deg)';
+    }
+    function reset(){
+      localCount = 0;
+      nudge.textContent = ' ';
+      noBtn.style.left='62%'; noBtn.style.top='50%'; noBtn.style.transform='translateY(-50%)';
+    }
+    function dodge(){
+      localCount++;
+      dodgeCount++;
+      placeNoRandom();
+      if (localCount===3) nudge.textContent='Nhanh tay đấy 😏';
+      else if (localCount===7) nudge.textContent="Thôi mà, bấm 'Có' đi~";
+      else if (localCount>=12) nudge.textContent='Chắc là có duyên với "Có" rồi 😄';
+    }
+    reset();
 
-  choiceField.addEventListener('mousemove', function(e){
-    if (order[current] !== 'chunhat') return;
-    var rect = btnNo.getBoundingClientRect();
-    var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-    var dist = Math.hypot(e.clientX-cx, e.clientY-cy);
-    if (dist < 90) dodge();
+    field.addEventListener('mousemove', function(e){
+      if (order[current] !== slideKey) return;
+      var rect = noBtn.getBoundingClientRect();
+      var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+      var dist = Math.hypot(e.clientX-cx, e.clientY-cy);
+      if (dist < 90) dodge();
+    });
+    noBtn.addEventListener('mouseenter', dodge);
+    noBtn.addEventListener('touchstart', function(e){ e.preventDefault(); dodge(); }, {passive:false});
+    // Nút "Không" không bao giờ thật sự chọn được — bấm/chạm vào nó chỉ khiến nó né đi tiếp.
+    noBtn.addEventListener('click', function(e){ e.preventDefault(); dodge(); });
+    yesBtn.addEventListener('click', function(){ opts.onYes(); next(); });
+  }
+
+  createDodgeChoice({
+    field: document.getElementById('choice-field'),
+    yesBtn: document.getElementById('btn-yes'),
+    noBtn: document.getElementById('btn-no'),
+    nudge: document.getElementById('nudge-text'),
+    slideKey: 'chunhat',
+    onYes: function(){ answers.ranhChuNhat = 'Có'; }
   });
-  btnNo.addEventListener('mouseenter', dodge);
-  btnNo.addEventListener('touchstart', function(e){ e.preventDefault(); dodge(); }, {passive:false});
-  btnYes.addEventListener('click', function(){ answers.ranhChuNhat = 'Có'; next(); });
-  btnNo.addEventListener('click', function(){ answers.ranhChuNhat = 'Không'; next(); });
+
+  createDodgeChoice({
+    field: document.getElementById('choice-field-hotay'),
+    yesBtn: document.getElementById('btn-yes-hotay'),
+    noBtn: document.getElementById('btn-no-hotay'),
+    nudge: document.getElementById('nudge-text-hotay'),
+    slideKey: 'hotay',
+    onYes: function(){ answers.hoTay = 'Có'; }
+  });
 
   var inputThoigian = document.getElementById('input-thoigian');
   var btnNextThoigian = document.getElementById('btn-next-thoigian');
@@ -444,9 +453,9 @@
   function buildPayload(){
     return {
       ten: answers.ten,
-      tuoi: answers.tuoi,
       tinh_trang_moi_quan_he: answers.tinhTrang,
       ranh_chu_nhat: answers.ranhChuNhat,
+      muon_di_ho_tay: answers.hoTay,
       thoigian_ranh: answers.thoigianRanh,
       so_lan_ne_nut_khong: dodgeCount,
       thoi_gian: new Date().toISOString()
@@ -457,9 +466,9 @@
     var subject = 'Tra loi tu ' + (answers.ten || 'ban be');
     var summary =
       'Tên: ' + answers.ten + '\n' +
-      'Tuổi: ' + answers.tuoi + '\n' +
       'Tình trạng: ' + answers.tinhTrang + '\n' +
       'Rảnh chủ nhật: ' + answers.ranhChuNhat + '\n' +
+      'Muốn đi Hồ Tây: ' + answers.hoTay + '\n' +
       'Thời gian rảnh: ' + answers.thoigianRanh + '\n\n' +
       '---\nJSON:\n' + JSON.stringify(lastPayload, null, 2);
     return 'mailto:' + RECIPIENT_EMAIL +
@@ -539,9 +548,9 @@
       if (savedPayload) {
         lastPayload = savedPayload;
         answers.ten = savedPayload.ten || '';
-        answers.tuoi = savedPayload.tuoi;
         answers.tinhTrang = savedPayload.tinh_trang_moi_quan_he || '';
         answers.ranhChuNhat = savedPayload.ranh_chu_nhat || '';
+        answers.hoTay = savedPayload.muon_di_ho_tay || '';
         answers.thoigianRanh = savedPayload.thoigian_ranh || '';
       }
       if (thanksName) thanksName.textContent = savedName ? ('Cảm ơn ' + savedName + ' nhé!') : 'Cảm ơn bạn nhé!';

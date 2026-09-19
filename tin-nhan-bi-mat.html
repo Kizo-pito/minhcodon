@@ -1,0 +1,549 @@
+<title>Tin Nhắn Bí Mật</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  :root{
+    --pink-1:#FFD9E8;
+    --pink-2:#FFB6D0;
+    --lav-1:#E7E1FF;
+    --lav-2:#D8CCFF;
+    --ink:#241432;
+    --muted:#6B5B7B;
+    --card:#FFFFFF;
+    --accent:#FF4F81;
+    --accent-dark:#E6386A;
+    --accent-2:#7C5CFF;
+    --yellow:#FFD23F;
+    --good:#1FA971;
+    --border: rgba(36,20,50,0.12);
+    --shadow: 0 24px 55px -22px rgba(124,92,255,0.45);
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{height:100%;}
+
+  body{
+    margin:0;
+    min-height:100%;
+    background:
+      radial-gradient(circle at 12% 8%, var(--pink-1), transparent 50%),
+      radial-gradient(circle at 88% 88%, var(--lav-1), transparent 50%),
+      linear-gradient(160deg,#FFF7FA 0%, #F4EFFF 100%);
+    color:var(--ink);
+    font-family:'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,h2,h3,.display{
+    font-family:'Fredoka','Be Vietnam Pro',sans-serif;
+    margin:0;
+    text-wrap:balance;
+  }
+
+  button{font-family:inherit;}
+  button, .pill, input, a{touch-action:manipulation;}
+
+  :focus-visible{outline:3px solid var(--accent-2); outline-offset:3px; border-radius:10px;}
+
+  .blob{position:fixed;border-radius:50%;filter:blur(2px);opacity:.55;z-index:0;pointer-events:none;}
+  .blob1{width:220px;height:220px;background:var(--pink-2);top:-60px;left:-70px;animation:float1 9s ease-in-out infinite;}
+  .blob2{width:180px;height:180px;background:var(--lav-2);bottom:-50px;right:-60px;animation:float2 11s ease-in-out infinite;}
+  .blob3{width:90px;height:90px;background:var(--yellow);top:20%;right:8%;opacity:.5;animation:float1 7s ease-in-out infinite;}
+  @keyframes float1{0%,100%{transform:translateY(0) translateX(0);}50%{transform:translateY(18px) translateX(10px);}}
+  @keyframes float2{0%,100%{transform:translateY(0) translateX(0);}50%{transform:translateY(-16px) translateX(-12px);}}
+  @media (prefers-reduced-motion: reduce){ .blob1,.blob2,.blob3{animation:none;} }
+
+  .stage{
+    position:relative;z-index:1;min-height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:32px 16px;gap:18px;
+  }
+
+  .progress{display:flex;gap:8px;min-height:10px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s ease, transform .3s ease;}
+  .dot.active{background:var(--accent);transform:scale(1.4);}
+  .dot.done{background:var(--accent-2);}
+
+  .viewport{width:100%;max-width:460px;}
+  .quiz-clip{overflow:hidden;border-radius:28px;}
+  .slides{display:flex;transition:transform .55s cubic-bezier(.22,1,.36,1);}
+  @media (prefers-reduced-motion: reduce){ .slides{transition:none;} }
+
+  .slide{
+    flex:0 0 100%;background:var(--card);border:1px solid var(--border);border-radius:28px;
+    padding:40px 28px;box-shadow:var(--shadow);min-height:440px;
+    display:flex;flex-direction:column;justify-content:center;gap:18px;
+  }
+
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2);}
+
+  h1{font-size:clamp(26px,7vw,32px);line-height:1.15;font-weight:600;}
+  h2{font-size:clamp(22px,6vw,27px);line-height:1.2;font-weight:600;}
+  p.body-text{font-size:15px;line-height:1.6;color:var(--muted);margin:0;}
+
+  .big-emoji{font-size:52px;line-height:1;}
+
+  .field{display:flex;flex-direction:column;gap:8px;}
+  .field label{font-size:13px;font-weight:600;color:var(--muted);}
+  .field input[type="text"], .field input[type="number"]{
+    font-size:17px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--border);
+    background:#FBF9FF;color:var(--ink);width:100%;
+  }
+  .field input:focus{border-color:var(--accent-2);outline:none;box-shadow:0 0 0 3px rgba(124,92,255,.18);}
+
+  .pill-grid{display:flex;flex-wrap:wrap;gap:10px;}
+  .pill{
+    padding:11px 16px;border-radius:999px;border:1.5px solid var(--border);background:#FBF9FF;color:var(--ink);
+    font-size:14px;font-weight:600;cursor:pointer;
+    transition:transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .pill:hover{transform:translateY(-1px);}
+  .pill.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .fallback-box{display:none;}
+  .fallback-box.show{display:flex;}
+  .btn{
+    flex:1;min-width:140px;padding:14px 18px;border-radius:14px;border:none;font-size:15px;font-weight:700;
+    cursor:pointer;transition:transform .15s ease, opacity .15s ease, background .15s ease;
+    display:inline-flex;align-items:center;justify-content:center;text-align:center;
+    text-decoration:none;box-sizing:border-box;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary:not(:disabled):hover{background:var(--accent-dark);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--accent-2);color:var(--accent-2);}
+
+  .back-link{align-self:flex-start;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;}
+  .back-link:hover{color:var(--accent-2);}
+
+  .choice-field{position:relative;height:200px;}
+  .choice-yes{
+    position:absolute;left:8%;top:50%;transform:translateY(-50%);
+    padding:16px 22px;border-radius:16px;border:none;background:var(--good);color:#fff;font-size:16px;font-weight:700;
+    cursor:pointer;box-shadow:0 10px 24px -10px rgba(31,169,113,.6);
+  }
+  .choice-no{
+    position:absolute;padding:16px 22px;border-radius:16px;border:none;background:#F1EAFF;color:var(--accent-2);
+    font-size:16px;font-weight:700;cursor:pointer;
+    transition:left .18s ease, top .18s ease, transform .18s ease;
+    box-shadow:0 10px 24px -12px rgba(124,92,255,.4);
+  }
+  .nudge{font-size:13px;color:var(--muted);text-align:center;min-height:18px;}
+
+  .footnote{font-size:12px;color:var(--muted);text-align:center;line-height:1.5;}
+
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:5;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  @media (max-width:400px){
+    .slide{padding:32px 20px;min-height:400px;}
+  }
+</style>
+
+<div class="blob blob1" aria-hidden="true"></div>
+<div class="blob blob2" aria-hidden="true"></div>
+<div class="blob blob3" aria-hidden="true"></div>
+
+<div class="stage">
+  <div class="progress" id="progress"></div>
+  <div class="viewport">
+    <div class="quiz-clip">
+      <div class="slides" id="slides">
+
+        <section class="slide" data-key="ten">
+          <div class="eyebrow">Câu 1 / 5</div>
+          <h2>Tên của bạn là gì?</h2>
+          <div class="field">
+            <label for="input-ten">Tên</label>
+            <input id="input-ten" type="text" placeholder="Nhập tên của bạn..." autocomplete="off" maxlength="60">
+          </div>
+          <button class="btn btn-primary" id="btn-next-ten" type="button" disabled>Tiếp theo →</button>
+        </section>
+
+        <section class="slide" data-key="tuoi">
+          <button class="back-link" type="button" data-back>← Quay lại</button>
+          <div class="eyebrow">Câu 2 / 5</div>
+          <h2>Bạn bao nhiêu tuổi?</h2>
+          <div class="field">
+            <label for="input-tuoi">Tuổi</label>
+            <input id="input-tuoi" type="number" inputmode="numeric" placeholder="VD: 20" min="1" max="120">
+          </div>
+          <button class="btn btn-primary" id="btn-next-tuoi" type="button" disabled>Tiếp theo →</button>
+        </section>
+
+        <section class="slide" data-key="tinhtrang">
+          <button class="back-link" type="button" data-back>← Quay lại</button>
+          <div class="eyebrow">Câu 3 / 5</div>
+          <h2>Tình trạng mối quan hệ hiện tại?</h2>
+          <div class="pill-grid" id="pill-group" role="group" aria-label="Tình trạng mối quan hệ">
+            <button class="pill" type="button" data-value="Độc thân">Độc thân</button>
+            <button class="pill" type="button" data-value="Đang hẹn hò">Đang hẹn hò</button>
+            <button class="pill" type="button" data-value="Đã có người yêu">Đã có người yêu</button>
+            <button class="pill" type="button" data-value="Đã kết hôn">Đã kết hôn</button>
+            <button class="pill" type="button" data-value="Phức tạp 🙃">Phức tạp 🙃</button>
+            <button class="pill" type="button" data-value="Không muốn nói">Không muốn nói</button>
+          </div>
+          <button class="btn btn-primary" id="btn-next-tinhtrang" type="button" disabled>Tiếp theo →</button>
+        </section>
+
+        <section class="slide" data-key="chunhat">
+          <button class="back-link" type="button" data-back>← Quay lại</button>
+          <div class="eyebrow">Câu 4 / 5</div>
+          <h2>Chủ nhật này bạn có rảnh không?</h2>
+          <div class="choice-field" id="choice-field">
+            <button class="choice-yes" type="button" id="btn-yes">Có 🙌</button>
+            <button class="choice-no" type="button" id="btn-no">Không</button>
+          </div>
+          <div class="nudge" id="nudge-text">&nbsp;</div>
+        </section>
+
+        <section class="slide" data-key="thoigian">
+          <button class="back-link" type="button" data-back>← Quay lại</button>
+          <div class="eyebrow">Câu 5 / 5</div>
+          <h2>Buổi tối bạn rảnh lúc mấy giờ?</h2>
+          <div class="field">
+            <label for="input-thoigian">Thời gian</label>
+            <input id="input-thoigian" type="text" placeholder="VD: 8h tối, 20:00..." autocomplete="off">
+          </div>
+          <button class="btn btn-primary" id="btn-next-thoigian" type="button" disabled>Gửi câu trả lời ✨</button>
+        </section>
+
+        <section class="slide" data-key="result">
+          <div class="big-emoji">🎉</div>
+          <h2 id="thanks-name">Cảm ơn bạn nhé!</h2>
+          <p class="body-text" id="thanks-sub">Đang gửi câu trả lời...</p>
+          <div class="row fallback-box" id="fallback-box">
+            <a class="btn btn-primary" id="btn-mail-again" href="mailto:">✉️ Gửi email</a>
+            <button class="btn btn-ghost" type="button" id="btn-copy">📋 Sao chép</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var RECIPIENT_EMAIL = "minhsay9@gmail.com";
+  // Lấy access key miễn phí tại https://web3forms.com (nhập email, key sẽ được gửi qua email).
+  // Thay chuỗi bên dưới bằng access key thật thì trang mới tự gửi được khi host online.
+  var WEB3FORMS_ACCESS_KEY = "91b94c43-efd5-4bf9-9a37-a21ac1efb5d5";
+
+  function submitToWeb3Forms(payload){
+    if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY.indexOf('YOUR_') === 0) {
+      return Promise.reject(new Error('no-access-key'));
+    }
+    var body = {
+      access_key: WEB3FORMS_ACCESS_KEY,
+      subject: 'Tra loi tu ' + (payload.ten || 'ban be'),
+      ten: payload.ten,
+      tuoi: payload.tuoi,
+      tinh_trang_moi_quan_he: payload.tinh_trang_moi_quan_he,
+      ranh_chu_nhat: payload.ranh_chu_nhat,
+      thoigian_ranh: payload.thoigian_ranh,
+      so_lan_ne_nut_khong: payload.so_lan_ne_nut_khong,
+      thoi_gian: payload.thoi_gian
+    };
+    return fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(json){
+        if (res.ok && json.success !== false) return json;
+        throw new Error((json && json.message) || 'submit-failed');
+      });
+    });
+  }
+
+  var order = ["ten","tuoi","tinhtrang","chunhat","thoigian","result"];
+  var questionKeys = ["ten","tuoi","tinhtrang","chunhat","thoigian"];
+  var current = 0;
+  var answers = { ten:"", tuoi:"", tinhTrang:"", ranhChuNhat:"", thoigianRanh:"" };
+  var dodgeCount = 0;
+  var lastPayload = null;
+
+  var progressEl = document.getElementById('progress');
+  var slidesEl = document.getElementById('slides');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var toastEl = document.getElementById('toast');
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(function(){ toastEl.classList.remove('show'); }, 1800);
+  }
+
+  function buildProgress(){
+    progressEl.innerHTML = '';
+    questionKeys.forEach(function(key){
+      var d = document.createElement('div');
+      d.className = 'dot';
+      d.dataset.key = key;
+      progressEl.appendChild(d);
+    });
+  }
+  function updateProgress(){
+    var dots = Array.prototype.slice.call(progressEl.children);
+    var idx = questionKeys.indexOf(order[current]);
+    dots.forEach(function(dot,i){
+      dot.classList.remove('active','done');
+      if (idx === -1) return;
+      if (i < idx) dot.classList.add('done');
+      else if (i === idx) dot.classList.add('active');
+    });
+  }
+  buildProgress();
+
+  function render(){
+    slidesEl.style.transform = 'translateX(-' + (current*100) + '%)';
+    sections.forEach(function(sec,i){
+      var isActive = i === current;
+      sec.setAttribute('aria-hidden', isActive ? 'false':'true');
+      var focusables = sec.querySelectorAll('input, button');
+      focusables.forEach(function(el){ el.tabIndex = isActive ? 0 : -1; });
+    });
+    updateProgress();
+    if (order[current] === 'ten') inputTen.focus();
+    if (order[current] === 'tuoi') inputTuoi.focus();
+    if (order[current] === 'thoigian') inputThoigian.focus();
+  }
+
+  function goTo(key){
+    var idx = order.indexOf(key);
+    if (idx===-1) return;
+    current = idx; render();
+    if (key === 'result' && typeof confetti === 'function') {
+      var duration = 2500;
+      var end = Date.now() + duration;
+      (function frame() {
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#FF4F81', '#7C5CFF', '#FFD23F'] });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#FF4F81', '#7C5CFF', '#FFD23F'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      }());
+    }
+  }
+
+  var navLocked = false;
+  function unlockNavSoon(){ setTimeout(function(){ navLocked = false; }, 400); }
+  function next(){
+    if (navLocked) return;
+    if (current < order.length-1){ navLocked = true; current++; render(); unlockNavSoon(); }
+  }
+  function back(){
+    if (navLocked) return;
+    if (current>0){ navLocked = true; current--; render(); unlockNavSoon(); }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-back]'), function(b){
+    b.addEventListener('click', back);
+  });
+
+  var inputTen = document.getElementById('input-ten');
+  var btnNextTen = document.getElementById('btn-next-ten');
+  inputTen.addEventListener('input', function(){
+    btnNextTen.disabled = inputTen.value.trim().length === 0;
+  });
+  inputTen.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !btnNextTen.disabled) { answers.ten = inputTen.value.trim(); next(); }
+  });
+  btnNextTen.addEventListener('click', function(){ answers.ten = inputTen.value.trim(); next(); });
+
+  var inputTuoi = document.getElementById('input-tuoi');
+  var btnNextTuoi = document.getElementById('btn-next-tuoi');
+  inputTuoi.addEventListener('input', function(){
+    btnNextTuoi.disabled = inputTuoi.value.trim().length === 0;
+  });
+  inputTuoi.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !btnNextTuoi.disabled) { answers.tuoi = Number(inputTuoi.value); next(); }
+  });
+  btnNextTuoi.addEventListener('click', function(){ answers.tuoi = Number(inputTuoi.value); next(); });
+
+  var pillGroup = document.getElementById('pill-group');
+  var btnNextTinhTrang = document.getElementById('btn-next-tinhtrang');
+  pillGroup.addEventListener('click', function(e){
+    var pill = e.target.closest('.pill');
+    if (!pill) return;
+    Array.prototype.forEach.call(pillGroup.children, function(p){ p.classList.remove('selected'); });
+    pill.classList.add('selected');
+    answers.tinhTrang = pill.dataset.value;
+    btnNextTinhTrang.disabled = false;
+  });
+  btnNextTinhTrang.addEventListener('click', next);
+
+  var choiceField = document.getElementById('choice-field');
+  var btnYes = document.getElementById('btn-yes');
+  var btnNo = document.getElementById('btn-no');
+  var nudgeText = document.getElementById('nudge-text');
+
+  function placeNoRandom(){
+    var fw = choiceField.clientWidth, fh = choiceField.clientHeight;
+    var bw = btnNo.offsetWidth || 110, bh = btnNo.offsetHeight || 50;
+    var maxX = Math.max(fw-bw-8,8), maxY = Math.max(fh-bh-8,8);
+    var x = Math.random()*maxX, y = Math.random()*maxY;
+    btnNo.style.left = x+'px'; btnNo.style.top = y+'px';
+    btnNo.style.transform = 'translateY(0) rotate('+(Math.random()*10-5)+'deg)';
+  }
+  function resetNoButton(){
+    dodgeCount = 0;
+    nudgeText.textContent = ' ';
+    btnNo.style.left='62%'; btnNo.style.top='50%'; btnNo.style.transform='translateY(-50%)';
+  }
+  function dodge(){
+    dodgeCount++;
+    placeNoRandom();
+    if (dodgeCount===3) nudgeText.textContent='Nhanh tay đấy 😏';
+    else if (dodgeCount===7) nudgeText.textContent="Thôi mà, bấm 'Có' đi~";
+    else if (dodgeCount>=12) nudgeText.textContent='Chắc là có duyên với "Có" rồi 😄';
+  }
+  resetNoButton();
+
+  choiceField.addEventListener('mousemove', function(e){
+    if (order[current] !== 'chunhat') return;
+    var rect = btnNo.getBoundingClientRect();
+    var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    var dist = Math.hypot(e.clientX-cx, e.clientY-cy);
+    if (dist < 90) dodge();
+  });
+  btnNo.addEventListener('mouseenter', dodge);
+  btnNo.addEventListener('touchstart', function(e){ e.preventDefault(); dodge(); }, {passive:false});
+  btnYes.addEventListener('click', function(){ answers.ranhChuNhat = 'Có'; next(); });
+  btnNo.addEventListener('click', function(){ answers.ranhChuNhat = 'Không'; next(); });
+
+  var inputThoigian = document.getElementById('input-thoigian');
+  var btnNextThoigian = document.getElementById('btn-next-thoigian');
+  inputThoigian.addEventListener('input', function(){
+    btnNextThoigian.disabled = inputThoigian.value.trim().length === 0;
+  });
+  inputThoigian.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && !btnNextThoigian.disabled) { answers.thoigianRanh = inputThoigian.value.trim(); finish(); }
+  });
+  btnNextThoigian.addEventListener('click', function(){ answers.thoigianRanh = inputThoigian.value.trim(); finish(); });
+
+  function buildPayload(){
+    return {
+      ten: answers.ten,
+      tuoi: answers.tuoi,
+      tinh_trang_moi_quan_he: answers.tinhTrang,
+      ranh_chu_nhat: answers.ranhChuNhat,
+      thoigian_ranh: answers.thoigianRanh,
+      so_lan_ne_nut_khong: dodgeCount,
+      thoi_gian: new Date().toISOString()
+    };
+  }
+
+  function buildMailHref(){
+    var subject = 'Tra loi tu ' + (answers.ten || 'ban be');
+    var summary =
+      'Tên: ' + answers.ten + '\n' +
+      'Tuổi: ' + answers.tuoi + '\n' +
+      'Tình trạng: ' + answers.tinhTrang + '\n' +
+      'Rảnh chủ nhật: ' + answers.ranhChuNhat + '\n' +
+      'Thời gian rảnh: ' + answers.thoigianRanh + '\n\n' +
+      '---\nJSON:\n' + JSON.stringify(lastPayload, null, 2);
+    return 'mailto:' + RECIPIENT_EMAIL +
+      '?subject=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(summary);
+  }
+
+  var thanksName = document.getElementById('thanks-name');
+  var thanksSub = document.getElementById('thanks-sub');
+  var fallbackBox = document.getElementById('fallback-box');
+  var btnMailAgain = document.getElementById('btn-mail-again');
+  var btnCopy = document.getElementById('btn-copy');
+
+  function refreshMailHref(){
+    btnMailAgain.setAttribute('href', buildMailHref());
+  }
+
+  btnCopy.addEventListener('click', function(){
+    var text = JSON.stringify(lastPayload, null, 2);
+    function fallbackCopy(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); showToast('Đã sao chép!'); }
+      catch(e){ showToast('Không sao chép được'); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showToast('Đã sao chép!'); }).catch(fallbackCopy);
+    } else { fallbackCopy(); }
+  });
+
+  function showSentOk(){
+    if (thanksSub) thanksSub.textContent = 'Câu trả lời của bạn đã được gửi đi rồi 💛';
+    if (fallbackBox) fallbackBox.classList.remove('show');
+  }
+  function showSentFailed(){
+    if (thanksSub) thanksSub.textContent = 'Trang chưa gửi tự động được, bạn giúp gửi lại nhé:';
+    if (fallbackBox) fallbackBox.classList.add('show');
+  }
+
+  function finish(){
+    lastPayload = buildPayload();
+
+    try {
+      sessionStorage.setItem('tnbm_thanked', '1');
+      sessionStorage.setItem('tnbm_name', answers.ten || '');
+      sessionStorage.setItem('tnbm_payload', JSON.stringify(lastPayload));
+      sessionStorage.removeItem('tnbm_sent');
+    } catch(e){}
+
+    if (thanksName) thanksName.textContent = answers.ten ? ('Cảm ơn ' + answers.ten + ' nhé!') : 'Cảm ơn bạn nhé!';
+    if (thanksSub) thanksSub.textContent = 'Đang gửi câu trả lời...';
+    if (fallbackBox) fallbackBox.classList.remove('show');
+    refreshMailHref();
+    goTo('result');
+
+    submitToWeb3Forms(lastPayload).then(function(){
+      try { sessionStorage.setItem('tnbm_sent', '1'); } catch(e){}
+      showSentOk();
+    }).catch(function(err){
+      if (window.console) console.warn('Không gửi tự động được:', err && err.message);
+      showSentFailed();
+    });
+  }
+
+  (function boot(){
+    var alreadyThanked = false, savedName = '', savedPayload = null, wasSent = false;
+    try {
+      alreadyThanked = sessionStorage.getItem('tnbm_thanked') === '1';
+      savedName = sessionStorage.getItem('tnbm_name') || '';
+      savedPayload = JSON.parse(sessionStorage.getItem('tnbm_payload') || 'null');
+      wasSent = sessionStorage.getItem('tnbm_sent') === '1';
+    } catch(e){}
+
+    if (alreadyThanked){
+      if (savedPayload) {
+        lastPayload = savedPayload;
+        answers.ten = savedPayload.ten || '';
+        answers.tuoi = savedPayload.tuoi;
+        answers.tinhTrang = savedPayload.tinh_trang_moi_quan_he || '';
+        answers.ranhChuNhat = savedPayload.ranh_chu_nhat || '';
+        answers.thoigianRanh = savedPayload.thoigian_ranh || '';
+      }
+      if (thanksName) thanksName.textContent = savedName ? ('Cảm ơn ' + savedName + ' nhé!') : 'Cảm ơn bạn nhé!';
+      refreshMailHref();
+      if (wasSent) showSentOk(); else showSentFailed();
+      goTo('result');
+    } else {
+      render();
+    }
+  })();
+})();
+</script>

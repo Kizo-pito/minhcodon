@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tin Nhắn Bí Mật</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -148,6 +153,8 @@
     .slide{padding:32px 20px;min-height:400px;}
   }
 </style>
+</head>
+<body>
 
 <div class="blob blob1" aria-hidden="true"></div>
 <div class="blob blob2" aria-hidden="true"></div>
@@ -400,7 +407,7 @@
   }
   function resetNoButton(){
     dodgeCount = 0;
-    nudgeText.textContent = ' ';
+    nudgeText.textContent = ' ';
     btnNo.style.left='62%'; btnNo.style.top='50%'; btnNo.style.transform='translateY(-50%)';
   }
   function dodge(){
@@ -547,3 +554,5 @@
   })();
 })();
 </script>
+</body>
+</html>
